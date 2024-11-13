@@ -1,0 +1,71 @@
+#eMOC-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-server
+    username: your_username
+    password: "$6$rz.QOfWX.M.XdGGu$hZG7TUfSONiTA03s0XVy0Op5SqCrpf0tBsXrcpswQ9OVhH0J42M7h5xSGrjzeGGbnf2auzY4VG6/w15nso6T.1"
+  ssh:
+    install-server: true
+    allow-pw: true
+  packages:
+    - open-vm-tools
+    - git
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - software-properties-common
+  user-data:
+    runcmd:
+      - |
+        # Install Google Chrome
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+        sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+        apt-get update
+        apt-get install -y google-chrome-stable
+
+        # Install Visual Studio Code
+        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+        install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
+        sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+        apt-get install -y apt-transport-https
+        apt-get update
+        apt-get install -y code
+
+        # Install Git Credential Manager
+        wget https://github.com/GitCredentialManager/git-credential-manager/releases/latest/download/gcm-linux_amd64.deb
+        dpkg -i gcm-linux_amd64.deb
+        git-credential-manager-core configure
+
+        # Install Studio 3T Free
+        wget -qO - https://studio3t.com/download-lin | bash
+
+        # Install Docker
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+        add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        apt-get update
+        apt-get install -y docker-ce docker-ce-cli containerd.io
+        usermod -aG docker your_username
+
+        # Install Docker Compose
+        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+
+        # Install NVM, Node.js, and NPM
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install --lts
+        nvm use --lts
+
+        # Install Vue CLI
+        npm install -g @vue/cli
+
+        # Install Mongo Shell and Tools
+        wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+        apt-get update
+        apt-get install -y mongodb-org-shell mongodb-database-tools
+  late-commands:
+    - curtin in-target --target=/target -- apt-get update
+    - curtin in-target --target=/target -- apt-get upgrade -y
